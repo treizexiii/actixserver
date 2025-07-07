@@ -1,4 +1,7 @@
 mod products;
+mod product_routes;
+
+mod user;
 
 use std::sync::Arc;
 
@@ -6,8 +9,6 @@ use actix_web::{web, App, HttpServer};
 
 use products::products_repository::MemoryProductsRepository;
 use product_routes::ProductRoutes;
-
-mod product_routes;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
