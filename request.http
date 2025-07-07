@@ -1,0 +1,47 @@
+@productId = "";
+
+### Création d’un produit
+# @name createProduct
+POST http://localhost:8081/products
+Content-Type: application/json
+
+{
+  "name": "Clavier mécanique",
+  "price": 89.90
+}
+
+###
+@productId = {{createProduct.response.body.$.id}}
+
+### Récupération de tous les produits
+GET http://localhost:8081/products
+
+### Récupération d’un produit par ID
+GET http://localhost:8081/products/{{productId}}
+
+### Update d’un produit
+PUT http://localhost:8081/products/{{productId}}
+Content-Type: application/json
+
+{
+  "name": "Clavier mécanique RGB",
+  "price": 99.90
+}
+
+### Suppression d’un produit
+DELETE http://localhost:8081/products/{{productId}}
+
+### Récupération de tous les produits
+GET http://localhost:8081/products
+
+### Produit inexistant
+GET http://localhost:8081/products/00000000-0000-0000-0000-000000000000
+
+### Création d’un produit avec des données invalides
+POST http://localhost:8081/products
+Content-Type: application/json
+
+{
+  "name": "",
+  "price": -10.0
+}
