@@ -1,15 +1,12 @@
 use std::sync::{Arc, Mutex};
 
-use argon2::password_hash::rand_core::OsRng;
-use argon2::{
-    Argon2,
-    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
-};
-
-use crate::user::user::User;
 use crate::user::{
     Error::{InvalidCredentials, NotFound},
     Result, errors,
+};
+use crate::{
+    user::user::User,
+    utils::password_handler::{hash_password, verify_password},
 };
 
 #[async_trait::async_trait]
@@ -47,13 +44,20 @@ impl UserRepository for MemoryUserRepository {
         }
 
         let id = users.last().map_or(0, |u| u.id) + 1;
-        match Self::hash_password(&password) {
-            Ok(hashed_password) => {
-                let user = User::new(id, username.clone(), email.clone(), hashed_password);
+        match hash_password(&password) {
+            Some(hashed_password) => {
+                let user = User {
+                    id,
+                    username: username.clone(),
+                    email: email.clone(),
+                    password: hashed_password,
+                };
                 users.push(user.clone());
                 Ok(user)
             }
-            Err(e) => Err(e),
+            None => Err(crate::user::Error::HashingError(
+                "Failed to hash password".to_string(),
+            )),
         }
     }
 
@@ -76,12 +80,12 @@ impl UserRepository for MemoryUserRepository {
                 InvalidCredentials(format!("User with username '{}' not found", username))
             })?;
 
-        match Self::verify_password(&password, user.password.clone()) {
-            Ok(true) => Ok(user),
-            Ok(false) => Err(InvalidCredentials(
-                "Invalid username or password".to_string(),
+        match verify_password(&password, user.password.clone()) {
+            Some(true) => Ok(user),
+            Some(false) => Err(InvalidCredentials("Invalid password".to_string())),
+            None => Err(errors::Error::HashingError(
+                "Password verification failed".to_string(),
             )),
-            Err(e) => Err(e),
         }
     }
 }
@@ -91,34 +95,5 @@ impl MemoryUserRepository {
         Self {
             users: Arc::new(Mutex::new(Vec::new())),
         }
-    }
-
-    fn hash_password(password: &str) -> Result<String> {
-        let salt = SaltString::generate(&mut OsRng);
-        let argon2 = Argon2::default();
-
-        match argon2.hash_password(password.as_bytes(), &salt) {
-            Ok(hash) => Ok(hash.to_string()),
-            Err(_) => Err(crate::user::Error::HashingError(
-                "Failed to hash password".to_string(),
-            )),
-        }
-    }
-
-    fn verify_password(password: &str, origin: String) -> Result<bool> {
-        match PasswordHash::new(&origin) {
-            Ok(hash) => {
-                let argon2 = Argon2::default();
-                match argon2.verify_password(password.as_bytes(), &hash) {
-                    Ok(_) => return Ok(true),
-                    Err(_) => return Ok(false),
-                }
-            }
-            Err(_) => {
-                return Err(errors::Error::HashingError(
-                    "Invalid password hash".to_string(),
-                ));
-            }
-        };
     }
 }
