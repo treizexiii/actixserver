@@ -24,7 +24,7 @@ impl UserRoutes {
     }
 
     async fn register(data: web::Data<Self>, item: web::Json<CreateUserRequest>) -> impl Responder {
-        match data.user_service.create_user(item.into_inner()).await {
+        match data.user_service.register_user(item.into_inner()).await {
             Ok(user_info) => HttpResponse::Created().json(user_info),
             Err(err) => match err {
                 AlreadyExists(_) => HttpResponse::Conflict().finish(),

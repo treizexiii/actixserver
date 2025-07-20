@@ -1,9 +1,10 @@
 mod products;
 mod user;
 mod routes;
+mod utils;
 
 use std::sync::Arc;
-use actix_web::{web::{self, Data}, App, HttpServer};
+use actix_web::{web::Data, App, HttpServer};
 use products::products_repository::MemoryProductsRepository;
 use routes::product_routes::ProductRoutes;
 

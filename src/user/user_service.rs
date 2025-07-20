@@ -41,9 +41,9 @@ impl UserService {
         }
     }
 
-    pub async fn create_user(
+    pub async fn register_user(
         &self,
-        request : CreateUserRequest,
+        request: CreateUserRequest,
     ) -> Result<UserInfo, Error> {
         if request.username.is_empty() || request.email.is_empty() || request.password.is_empty() {
             return Err(Error::InvalidInput("Username, email, and password cannot be empty".to_string()));
