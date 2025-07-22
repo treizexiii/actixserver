@@ -1,5 +1,7 @@
 use std::sync::{Arc, Mutex};
 
+use once_cell::sync::Lazy;
+
 use crate::user::{
     Error::{InvalidCredentials, NotFound},
     Result, errors,
@@ -14,11 +16,28 @@ pub trait UserRepository: Send + Sync {
     async fn add_user(&self, username: String, email: String, password: String) -> Result<User>;
     async fn get_user_by_username(&self, username: String) -> Result<User>;
     async fn control_user(&self, username: String, password: String) -> Result<User>;
+    async fn get_all_users(&self) -> Result<Vec<User>>;
+    async fn get_user_by_id(&self, id: u32) -> Result<User>;
 }
+
+
+/////////// MemoryUserRepository /////////////////////////////////////////////////////////////////////////////////
+
+static USERS: Lazy<Arc<Mutex<Vec<User>>>> = Lazy::new(|| {
+    Arc::new(Mutex::new(Vec::new()))
+});
 
 #[derive(Clone)]
 pub struct MemoryUserRepository {
     users: Arc<Mutex<Vec<User>>>,
+}
+
+impl MemoryUserRepository {
+    pub fn new() -> Self {
+        MemoryUserRepository {
+            users: USERS.clone(),
+        }
+    }
 }
 
 #[async_trait::async_trait]
@@ -88,12 +107,18 @@ impl UserRepository for MemoryUserRepository {
             )),
         }
     }
-}
 
-impl MemoryUserRepository {
-    pub fn new() -> Self {
-        Self {
-            users: Arc::new(Mutex::new(Vec::new())),
-        }
+    async fn get_all_users(&self) -> Result<Vec<User>> {
+        let users = self.users.lock().unwrap();
+        Ok(users.clone())
+    }
+
+    async fn get_user_by_id(&self, id: u32) -> Result<User> {
+        let users = self.users.lock().unwrap();
+        users
+            .iter()
+            .find(|&u| u.id == id)
+            .cloned()
+            .ok_or_else(|| NotFound(format!("User with ID '{}' not found", id)))
     }
 }

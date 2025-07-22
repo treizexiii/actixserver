@@ -7,7 +7,6 @@ pub enum Error {
     NotFound(String),
     AlreadyExists(String),
     InvalidInput(String),
-    InternalError(String),
     HashingError(String),
     InvalidCredentials(String),
 }

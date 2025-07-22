@@ -45,3 +45,22 @@ Content-Type: application/json
   "name": "",
   "price": -10.0
 }
+
+### Création d’un utilisateur
+POST http://localhost:8081/register
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "testpassword",
+  "email": "testuser@email.com"
+}
+
+### Connexion d’un utilisateur
+POST http://localhost:8081/login
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "testpassword"
+}

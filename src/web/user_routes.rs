@@ -17,10 +17,13 @@ impl UserRoutes {
     }
 
     pub fn scope(data: web::Data<Self>) -> Scope {
-        web::scope("/")
+        web::scope("")
             .app_data(data.clone())
-            .route("/register", web::post().to(Self::register))
-            .route("/login", web::post().to(Self::login))
+            .route("register", web::post().to(Self::register))
+            .route("login", web::post().to(Self::login))
+            .route("/users", web::get().to(Self::list_users))
+            .route("/users/{id}", web::get().to(Self::get_user))
+            .route("/users/{username}", web::get().to(Self::get_user_by_username))
     }
 
     async fn register(data: web::Data<Self>, item: web::Json<CreateUserRequest>) -> impl Responder {
@@ -46,6 +49,38 @@ impl UserRoutes {
             }
             Err(err) => match err {
                 InvalidCredentials(_) => HttpResponse::Unauthorized().finish(),
+                InvalidInput(_) => HttpResponse::BadRequest().finish(),
+                _ => HttpResponse::InternalServerError().finish(),
+            },
+        }
+    }
+
+    async fn list_users(data: web::Data<Self>) -> impl Responder {
+        match data.user_service.get_all_users().await {
+            Ok(users) => HttpResponse::Ok().json(users),
+            Err(err) => match err {
+                InvalidInput(_) => HttpResponse::BadRequest().finish(),
+                _ => HttpResponse::InternalServerError().finish(),
+            },
+        }
+    }
+
+    async fn get_user(data: web::Data<Self>, id: web::Path<u32>) -> impl Responder {
+        match data.user_service.get_user_by_id(*id).await {
+            Ok(user) => HttpResponse::Ok().json(user),
+            Err(err) => match err {
+                crate::user::Error::NotFound(_) => HttpResponse::NotFound().finish(),
+                InvalidInput(_) => HttpResponse::BadRequest().finish(),
+                _ => HttpResponse::InternalServerError().finish(),
+            },
+        }
+    }
+
+    async fn get_user_by_username(data: web::Data<Self>, username: web::Path<String>) -> impl Responder {
+        match data.user_service.get_user_info(username.into_inner()).await {
+            Ok(user_info) => HttpResponse::Ok().json(user_info),
+            Err(err) => match err {
+                crate::user::Error::NotFound(_) => HttpResponse::NotFound().finish(),
                 InvalidInput(_) => HttpResponse::BadRequest().finish(),
                 _ => HttpResponse::InternalServerError().finish(),
             },

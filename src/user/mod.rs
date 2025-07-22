@@ -10,6 +10,6 @@ pub use errors::{Result, Error};
 use crate::user::user_service::UserService;
 
 pub fn add_users() -> UserService {
-    let user_repository = user_repository::MemoryUserRepository::new();
-    UserService::new(Arc::new(user_repository))
+    let user_repository = Arc::new(user_repository::MemoryUserRepository::new());
+    UserService::new(user_repository)
 }

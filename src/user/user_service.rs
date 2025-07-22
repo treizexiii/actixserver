@@ -3,6 +3,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -18,6 +19,7 @@ pub struct UserService {
 pub struct UserInfo {
     pub username: String,
     pub email: String,
+    pub last_login: Option<DateTime<Utc>>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -55,6 +57,7 @@ impl UserService {
         Ok(UserInfo {
             username: user.username,
             email: user.email,
+            last_login: None,
         })
     }
 
@@ -65,11 +68,13 @@ impl UserService {
         let user = self.repository.control_user(request.username, request.password).await?;
         let token = Uuid::new_v4();
         let mut tokens = self.tokens.lock().unwrap();
+        let last_login = Some(Utc::now());
         tokens.insert(
             token, 
             UserInfo {
                 username: user.username.clone(),
                 email: user.email.clone(),
+                last_login,
             },
         );
         Ok(token.to_string())
@@ -80,6 +85,25 @@ impl UserService {
         Ok(UserInfo {
             username: user.username,
             email: user.email,
+            last_login: None,
+        })
+    }
+
+    pub async fn get_all_users(&self) -> Result<Vec<UserInfo>, Error> {
+        let users = self.repository.get_all_users().await?;
+        Ok(users.into_iter().map(|user| UserInfo {
+            username: user.username,
+            email: user.email,
+            last_login: None,
+        }).collect())
+    }
+    
+    pub async fn get_user_by_id(&self, id: u32) -> Result<UserInfo, Error> {
+        let user = self.repository.get_user_by_id(id).await?;
+        Ok(UserInfo {
+            username: user.username,
+            email: user.email,
+            last_login: None,
         })
     }
 }
